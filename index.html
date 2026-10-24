@@ -150,6 +150,9 @@ main{padding-bottom:120px}
 .th.fr{-webkit-mask-image:linear-gradient(to left,transparent,#000 44px);mask-image:linear-gradient(to left,transparent,#000 44px)}
 .th.fl{-webkit-mask-image:linear-gradient(to right,transparent,#000 44px);mask-image:linear-gradient(to right,transparent,#000 44px)}
 .th.fl.fr{-webkit-mask-image:linear-gradient(to right,transparent,#000 44px,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,transparent,#000 44px,#000 calc(100% - 44px),transparent)}
+.view img{position:relative;z-index:1;opacity:0;transition:opacity .25s}.view img.ld{opacity:1}
+.view::after{content:"";position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border:4px solid rgba(0,0,0,.14);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite}
+.th img{opacity:0;transition:opacity .2s}.th img.ld{opacity:1}
 </style>
 </head>
 <body>
@@ -179,7 +182,7 @@ let h=b('&#8249;',c-1,c==1,0,'Previous page'),last=0;
 ns.forEach(i=>{if(i-last>1)h+='<span class="pgd">&hellip;</span>';h+=b(i,i,0,i==c);last=i});
 h+=b('&#8250;',c+1,c==n,0,'Next page');
 return `<div class="pager" role="navigation" aria-label="Pagination">${h}</div><p class="pgi">Showing ${(c-1)*PER+1}-${Math.min(c*PER,total)} of ${total}</p>`}
-let media=(p,full)=>p.type=='video'&&p.real&&full?`<video src="${p.src}" controls playsinline preload="metadata"></video>`:`<img src="${p.src}" alt="${esc(p.code)}">${p.type=='video'?'<span class="pl" aria-hidden="true">&#9654;</span>':''}`;
+let media=(p,full,sz)=>p.type=='video'&&p.real&&full?`<video src="${p.src}" controls playsinline preload="metadata"></video>`:`<img src="${p.src}" alt="${esc(p.code)}">${p.type=='video'?'<span class="pl" aria-hidden="true">&#9654;</span>':''}`;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),3000)}
 
 /* ---------- VIEWS ---------- */
@@ -207,7 +210,7 @@ if(!a.length){cur=null;m.classList.remove('on');document.body.style.overflow='';
 idx=(idx+a.length)%a.length;
 const p=a[idx];
 if(crop&&crop.pid==p.id){m.innerHTML=cropHtml(p);m.classList.add('on');document.body.style.overflow='hidden';initCrop();return}
-m.innerHTML=`<div class="mod" role="dialog" aria-modal="true" aria-label="${esc(cur)}"><button class="x" data-act="close" aria-label="Close">&times;</button><div><div class="view">${media(p,true)}${a.length>1?`<button class="nv" style="left:10px" data-act="step" data-d="-1" aria-label="Previous">&#8249;</button><button class="nv" style="right:10px" data-act="step" data-d="1" aria-label="Next">&#8250;</button>`:''}<span class="tag ${idx?'o':''}">${idx?(p.type=='video'?'Video':'Photo ')+(idx+1):'Main photo'}</span></div>${a.length>1?`<div class="th">${a.map((x,k)=>`<button class="${k==idx?'on':''}" data-act="thumb" data-k="${k}" aria-label="Show file ${k+1}">${media(x)}</button>`).join('')}</div>`:''}</div><div><span class="em">Item code</span><h2>${esc(cur)}</h2><p class="sub">File ${idx+1} of ${a.length}. The first file is the main photo.</p>${isAdmin()?`<div style="display:flex;gap:8px;flex-wrap:wrap">${idx?`<button class="btn" data-act="main" data-p="${p.id}">Set as main</button>`:''}${p.type=='image'?`<button class="btn ghost" data-act="crop" data-p="${p.id}">Crop / ratio</button>`:''}${p.orig?`<button class="btn ghost" data-act="restore" data-p="${p.id}">Restore original</button>`:''}<button class="btn no" data-act="del" data-p="${p.id}">Delete</button></div>`:''}</div></div>`;
+m.innerHTML=`<div class="mod" role="dialog" aria-modal="true" aria-label="${esc(cur)}"><button class="x" data-act="close" aria-label="Close">&times;</button><div><div class="view">${media(p,true)}${a.length>1?`<button class="nv" style="left:10px" data-act="step" data-d="-1" aria-label="Previous">&#8249;</button><button class="nv" style="right:10px" data-act="step" data-d="1" aria-label="Next">&#8250;</button>`:''}<span class="tag ${idx?'o':''}">${idx?(p.type=='video'?'Video':'Photo ')+(idx+1):'Main photo'}</span></div>${a.length>1?`<div class="th">${a.map((x,k)=>`<button class="${k==idx?'on':''}" data-act="thumb" data-k="${k}" aria-label="Show file ${k+1}">${media(x,false,200)}</button>`).join('')}</div>`:''}</div><div><span class="em">Item code</span><h2>${esc(cur)}</h2><p class="sub">File ${idx+1} of ${a.length}. The first file is the main photo.</p>${isAdmin()?`<div style="display:flex;gap:8px;flex-wrap:wrap">${idx?`<button class="btn" data-act="main" data-p="${p.id}">Set as main</button>`:''}${p.type=='image'?`<button class="btn ghost" data-act="crop" data-p="${p.id}">Crop / ratio</button>`:''}${p.orig?`<button class="btn ghost" data-act="restore" data-p="${p.id}">Restore original</button>`:''}<button class="btn no" data-act="del" data-p="${p.id}">Delete</button></div>`:''}</div></div>`;
 m.classList.add('on');document.body.style.overflow='hidden';
 }
 
@@ -301,7 +304,7 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const DRIVE_URL='https://script.google.com/macros/s/AKfycbz0SAnAuVIYkhwdkmUqCRv5yq54bVQSBZk_DsZnByRymaiXuJPSDaAnyu4GLVOevpeJbA/exec'; /* from Deploy > Web app */     /* anon / publishable key */
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const dsrc=(id,w=800)=>`https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
-media=(p,full)=>p.type=='video'&&full?`<iframe src="https://drive.google.com/file/d/${p.drive}/preview" allow="autoplay" allowfullscreen style="width:100%;height:100%;border:0"></iframe>`:`<img src="${dsrc(p.drive,full?1600:600)}" alt="${esc(p.code)}" loading="lazy">${p.type=='video'?'<span class="pl" aria-hidden="true">&#9654;</span>':''}`;
+media=(p,full,sz)=>p.type=='video'&&full?`<iframe src="https://drive.google.com/file/d/${p.drive}/preview" allow="autoplay" allowfullscreen style="width:100%;height:100%;border:0"></iframe>`:`<img src="${dsrc(p.drive,sz||(full?1200:600))}" alt="${esc(p.code)}" loading="lazy" onload="this.classList.add('ld')">${p.type=='video'?'<span class="pl" aria-hidden="true">&#9654;</span>':''}`;
 async function fn(body){const {data:{session}}=await sb.auth.getSession();
 const r=await fetch(DRIVE_URL,{method:'POST',body:JSON.stringify({...body,token:session&&session.access_token})});
 const j=await r.json();if(j.error)throw new Error(j.error);return j}
@@ -434,7 +437,7 @@ addEventListener('keydown',e=>{if(e.key=='Escape'&&$('#lb')){e.stopImmediateProp
 
 /* ---------- THUMBNAIL STRIP: fade edges when more files are hidden, keep selected one in view ---------- */
 const thFade=t=>{t.classList.toggle('fl',t.scrollLeft>4);t.classList.toggle('fr',t.scrollLeft+t.clientWidth<t.scrollWidth-4)};
-{const _modal=modal;modal=function(){const o=$('.th'),sl=o?o.scrollLeft:0;_modal();const t=$('.th');if(!t)return;
+{const _modal=modal;modal=function(){const o=$('.th'),sl=o?o.scrollLeft:0;_modal();if(cur!=null){const a=appr(cur);if(a.length>1)[1,2,-1].forEach(d=>{const q=a[(idx+d+a.length*3)%a.length];if(q&&q.type!='video')new Image().src=dsrc(q.drive,1200)})}const t=$('.th');if(!t)return;
 t.scrollLeft=sl;thFade(t);t.addEventListener('scroll',()=>thFade(t),{passive:true});
 const a=t.querySelector('.on');if(a){const r=a.getBoundingClientRect(),tr=t.getBoundingClientRect();
 t.scrollTo({left:t.scrollLeft+(r.left-tr.left)-(t.clientWidth-r.width)/2,behavior:'smooth'})}}}
