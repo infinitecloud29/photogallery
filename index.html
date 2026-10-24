@@ -178,7 +178,7 @@ const b=(l,t,dis,on,al)=>`<button class="pgb${on?' on':''}" data-act="page" data
 let h=b('&#8249;',c-1,c==1,0,'Previous page'),last=0;
 ns.forEach(i=>{if(i-last>1)h+='<span class="pgd">&hellip;</span>';h+=b(i,i,0,i==c);last=i});
 h+=b('&#8250;',c+1,c==n,0,'Next page');
-return `<nav class="pager" aria-label="Pagination">${h}</nav><p class="pgi">Showing ${(c-1)*PER+1}-${Math.min(c*PER,total)} of ${total}</p>`}
+return `<div class="pager" role="navigation" aria-label="Pagination">${h}</div><p class="pgi">Showing ${(c-1)*PER+1}-${Math.min(c*PER,total)} of ${total}</p>`}
 let media=(p,full)=>p.type=='video'&&p.real&&full?`<video src="${p.src}" controls playsinline preload="metadata"></video>`:`<img src="${p.src}" alt="${esc(p.code)}">${p.type=='video'?'<span class="pl" aria-hidden="true">&#9654;</span>':''}`;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),3000)}
 
