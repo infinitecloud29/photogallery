@@ -153,6 +153,15 @@ main{padding-bottom:120px}
 .view img{position:relative;z-index:1;opacity:0;transition:opacity .25s}.view img.ld{opacity:1}
 .view::after{content:"";position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border:4px solid rgba(0,0,0,.14);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite}
 .th img{opacity:0;transition:opacity .2s}.th img.ld{opacity:1}
+.drop{margin:12px 0;padding:22px 14px;border:2px dashed rgba(255,255,255,.3);border-radius:18px;text-align:center;color:var(--m);cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.drop b{display:block;color:var(--t);font-size:15px}.drop span{font-size:13px}
+.drop:hover,.drop:focus-visible,.drop.over{border-color:var(--p);background:rgba(255,184,0,.1)}.drop.over{transform:scale(1.02)}
+@media(hover:none){.drop{display:none}}
+body.dragging::after{content:"Drop files to add them";position:fixed;inset:12px;z-index:45;display:grid;place-items:center;border:3px dashed var(--p);border-radius:24px;background:rgba(8,6,4,.72);color:#fff;font-size:22px;font-weight:700;pointer-events:none}
+.ph canvas{width:100%;height:100%;object-fit:contain;display:block}
+.th canvas{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
+.view canvas,#lb canvas{max-width:100%;max-height:100%;object-fit:contain;touch-action:none;user-select:none;-webkit-user-select:none;cursor:zoom-in;transform-origin:center;position:relative;z-index:1}
+.view canvas,.th canvas,#lb canvas{opacity:0;transition:opacity .25s}.view canvas.ld,.th canvas.ld,#lb canvas.ld{opacity:1}
 </style>
 </head>
 <body>
@@ -190,9 +199,9 @@ function loginHtml(){return `<div class="login"><form class="glass" id="lf">${lo
 function gridHtml(){
 if(C.gal.total==null)return '<div class="empty">Loading...</div>';const L=C.gal.rows;
 if(!L.length)return '<div class="empty">No item code matches your search. Check the code and try again.</div>';
-return `<div class="grid">${L.map(r=>{const c=r.code;return `<div class="card" tabindex="0" role="button" data-act="open" data-c="${esc(c)}"><div class="ph">${media({code:c,type:r.main_type,drive:r.main_drive_id})}${r.file_count>1?`<span class="cnt">${r.file_count} files</span>`:''}</div><div class="meta"><b>${esc(c)}</b></div></div>`}).join('')}</div>${pager('gallery',C.gal.total)}`}
+return `<div class="grid">${L.map(r=>{const c=r.code;return `<div class="card" tabindex="0" role="button" data-act="open" data-c="${esc(c)}"><div class="ph">${media({code:c,type:r.main_type,drive:r.main_drive_id,crop:r.main_crop})}${r.file_count>1?`<span class="cnt">${r.file_count} files</span>`:''}</div><div class="meta"><b>${esc(c)}</b></div></div>`}).join('')}</div>${pager('gallery',C.gal.total)}`}
 function galleryHtml(){return `<h2>Gallery</h2><p class="sub">Tap an item code to see its photos and videos.</p><input class="in" id="q" type="search" placeholder="Search item code" aria-label="Search item code" value="${esc(q)}" style="margin-bottom:16px"><div id="grid">${gridHtml()}</div>`}
-function uploadHtml(){return `<h2>Upload</h2><p class="sub">${isAdmin()?'Your files are published right away.':'An admin reviews your files before they appear in the gallery.'}</p><div class="panel" id="dz"><label for="uc"><b>Item code</b></label><input class="in" id="uc" list="cl" autocapitalize="characters" autocomplete="off" placeholder="Example: SW-3031" style="margin-top:6px"><datalist id="cl">${[...new Set(photos.map(p=>p.code))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist><div class="caps"><label class="btn">Take photo<input type="file" id="f1" accept="image/*" capture="environment" hidden></label><label class="btn">Record video<input type="file" id="f2" accept="video/*" capture="environment" hidden></label><label class="btn ghost">Choose from phone<input type="file" id="f3" accept="image/*,video/*" multiple hidden></label></div><div class="q" id="qq"></div><button class="btn" style="width:100%" data-act="submit">${isAdmin()?'Publish':'Send for review'}</button></div>`}
+function uploadHtml(){return `<h2>Upload</h2><p class="sub">${isAdmin()?'Your files are published right away.':'An admin reviews your files before they appear in the gallery.'}</p><div class="panel" id="dz"><label for="uc"><b>Item code</b></label><input class="in" id="uc" list="cl" autocapitalize="characters" autocomplete="off" placeholder="Example: SW-3031" style="margin-top:6px"><datalist id="cl">${[...new Set(photos.map(p=>p.code))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist><div class="caps"><label class="btn">Take photo<input type="file" id="f1" accept="image/*" capture="environment" hidden></label><label class="btn">Record video<input type="file" id="f2" accept="video/*" capture="environment" hidden></label><label class="btn ghost">Choose from phone<input type="file" id="f3" accept="image/*,video/*" multiple hidden></label></div><div class="drop" id="drop" tabindex="0" role="button" aria-label="Drag and drop photos or videos here, or press Enter to browse"><b>Drag &amp; drop photos or videos here</b><span>or click to browse, or press Ctrl+V to paste a screenshot</span></div><div class="q" id="qq"></div><button class="btn" style="width:100%" data-act="submit">${isAdmin()?'Publish':'Send for review'}</button></div>`}
 function paintQueue(){$('#qq').innerHTML=queue.map((u,k)=>`<div class="qi">${u.type=='video'?'<div class="vt">&#9654;<small>video</small></div>':`<img src="${u.url}" alt="Selected photo">`}<button data-act="rm" data-k="${k}" aria-label="Remove file">&times;</button></div>`).join('')}
 function reviewHtml(){if(C.rev.total==null)return '<h2>Review queue</h2><div class="empty">Loading...</div>';const L=C.rev.rows,T=C.rev.total;return `<h2>Review queue</h2><p class="sub">${T} file${T==1?'':'s'} waiting for approval.</p>${L.length?`<div class="grid">${L.map(p=>`<div class="card" style="cursor:default"><div class="ph">${media(p,true)}</div><div class="meta"><b>${esc(p.code)}</b><br><span>From ${esc(p.by)} on ${p.date}</span></div><div class="act"><button class="btn ok" data-act="approve" data-p="${p.id}">Approve</button><button class="btn no" data-act="reject" data-p="${p.id}">Reject</button></div></div>`).join('')}</div>${pager('review',T)}`:'<div class="empty">All caught up. New uploads will show here.</div>'}`}
 function mineHtml(){if(C.mine.total==null)return '<h2>My uploads</h2><div class="empty">Loading...</div>';const L=C.mine.rows,T=C.mine.total;return `<h2>My uploads</h2><p class="sub">Check the review status of your files.</p>${L.length?`<div class="grid">${L.map(p=>`<div class="card" style="cursor:default"><div class="ph">${media(p)}</div><div class="meta"><b>${esc(p.code)}</b><br><span class="st ${p.status}">${p.status}</span>${p.note?`<br><span>${esc(p.note)}</span>`:''}</div></div>`).join('')}</div>${pager('mine',T)}`:'<div class="empty">You have not uploaded anything yet. Open Upload to add your first file.</div>'}`}
@@ -262,9 +271,15 @@ me={email:em,role:u.role};view='gallery';render()});
 document.addEventListener('input',e=>{if(e.target.id=='q'){q=e.target.value;pg.gallery=1;$('#grid').innerHTML=gridHtml()}});
 document.addEventListener('change',e=>{if(/^f[123]$/.test(e.target.id)){addFiles(e.target.files);e.target.value=''}});
 function addFiles(fs){[...fs].forEach(f=>{const v=f.type.startsWith('video/');if(!v&&!f.type.startsWith('image/'))return;if(v&&f.size>MAX_VIDEO_MB*1048576)return toast('That video is too big. The maximum is '+MAX_VIDEO_MB+' MB.');queue.push({file:f,url:URL.createObjectURL(f),type:v?'video':'image'})});paintQueue()}
-['dragover','dragleave','drop'].forEach(t=>document.addEventListener(t,e=>{
-const z=e.target.closest&&e.target.closest('#dz');if(!z)return;
-e.preventDefault();z.classList.toggle('over',t=='dragover');if(t=='drop')addFiles(e.dataTransfer.files)}));
+const hasFiles=e=>e.dataTransfer&&[...e.dataTransfer.types].includes('Files');
+['dragenter','dragover'].forEach(t=>addEventListener(t,e=>{if(!hasFiles(e))return;e.preventDefault();
+const ok=me&&view=='upload'&&$('#qq');document.body.classList.toggle('dragging',!!ok);
+const d=e.target.closest&&e.target.closest('#drop');const z=$('#drop');if(z)z.classList.toggle('over',!!d)}));
+addEventListener('dragleave',e=>{if(e.relatedTarget)return;document.body.classList.remove('dragging');const z=$('#drop');if(z)z.classList.remove('over')});
+addEventListener('drop',e=>{if(!hasFiles(e))return;e.preventDefault();document.body.classList.remove('dragging');const z=$('#drop');if(z)z.classList.remove('over');
+if(me&&view=='upload'&&$('#qq'))addFiles(e.dataTransfer.files)});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#drop')){const f=$('#f3');if(f)f.click()}});
+document.addEventListener('keydown',e=>{if((e.key=='Enter'||e.key==' ')&&e.target.id=='drop'){e.preventDefault();$('#f3').click()}});
 /* swipe to change file; block pinch / double-tap page zoom */
 let sx=null;
 document.addEventListener('touchstart',e=>{sx=e.target.closest('.view')&&e.touches.length==1?e.touches[0].clientX:null},{passive:true});
@@ -272,7 +287,7 @@ document.addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTo
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 
 /* ---------- CROP (admin) ---------- */
-function cropHtml(p){return `<div class="mod" role="dialog" aria-modal="true" aria-label="Crop ${esc(p.code)}"><button class="x" data-act="close" aria-label="Close">&times;</button><div><div class="cs" id="cs"><div class="cw" id="cw"><img id="ci" crossorigin="anonymous" src="${p.src}" alt="" draggable="false"><div class="cb" id="cb"><i class="hd" data-h="nw"></i><i class="hd" data-h="ne"></i><i class="hd" data-h="sw"></i><i class="hd" data-h="se"></i><span class="cl" id="cl"></span></div></div></div></div><div><span class="em">Crop photo</span><h2>${esc(p.code)}</h2><p class="sub">Pick a ratio, then drag the box or its corners.</p><div class="rat">${RATIOS.map(([l,v])=>`<button data-act="ratio" data-r="${v}" class="${v=='free'?'on':''}">${l}</button>`).join('')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn" data-act="cropsave">Save crop</button><button class="btn ghost" data-act="cropcancel">Cancel</button></div></div></div>`}
+function cropHtml(p){return `<div class="mod" role="dialog" aria-modal="true" aria-label="Crop ${esc(p.code)}"><button class="x" data-act="close" aria-label="Close">&times;</button><div><div class="cs" id="cs"><div class="cw" id="cw"><img id="ci" src="${p.src}" alt="" draggable="false"><div class="cb" id="cb"><i class="hd" data-h="nw"></i><i class="hd" data-h="ne"></i><i class="hd" data-h="sw"></i><i class="hd" data-h="se"></i><span class="cl" id="cl"></span></div></div></div></div><div><span class="em">Crop photo</span><h2>${esc(p.code)}</h2><p class="sub">Pick a ratio, then drag the box or its corners.</p><div class="rat">${RATIOS.map(([l,v])=>`<button data-act="ratio" data-r="${v}" class="${v=='free'?'on':''}">${l}</button>`).join('')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn" data-act="cropsave">Save crop</button><button class="btn ghost" data-act="cropcancel">Cancel</button></div></div></div>`}
 function initCrop(){const img=$('#ci');const go=()=>{const nw=img.naturalWidth||400,nh=img.naturalHeight||400,st=$('#cs'),s=Math.min(st.clientWidth/nw,st.clientHeight/nh),W=nw*s,H=nh*s,cw=$('#cw');cw.style.width=W+'px';cw.style.height=H+'px';img.style.width='100%';img.style.height='100%';Object.assign(crop,{W,H,nw,nh,x:W*.05,y:H*.05,w:W*.9,h:H*.9});drawBox()};if(img.complete)go();else img.onload=go}
 function setRatio(r){crop.r=r;if(r=='free')return;const W=crop.W,H=crop.H,w=Math.min(W*.9,H*.9*r);crop.w=w;crop.h=w/r;crop.x=(W-w)/2;crop.y=(H-crop.h)/2}
 function drawBox(){const cb=$('#cb');if(!cb||crop.W==null)return;cb.style.cssText=`left:${crop.x}px;top:${crop.y}px;width:${crop.w}px;height:${crop.h}px`;$('#cl').textContent=Math.round(crop.w/crop.W*crop.nw)+' × '+Math.round(crop.h/crop.H*crop.nh)}
@@ -319,7 +334,7 @@ const bl=await new Promise(r=>c.toBlob(r,'image/jpeg',.85));return bl&&bl.size<f
 async function up(file,onp){const {data:{session}}=await sb.auth.getSession();
 const j=await xhrUp({a:'upload',name:file.name,mime:file.type,data:await b64(file),token:session&&session.access_token},onp||(()=>{}));return j.id}
 const upd=async(id,v)=>{const {error}=await sb.from('photos').update(v).eq('id',id);if(error)throw error};
-const mapRow=r=>({id:r.id,code:r.code,type:r.type,drive:r.drive_id,src:dsrc(r.drive_id,1600),origId:r.orig_drive_id||undefined,orig:r.orig_drive_id?dsrc(r.orig_drive_id,1600):undefined,status:r.status,by:r.uploaded_email,date:r.created_at.slice(0,10),note:r.note||'',order:r.sort_order});
+const mapRow=r=>({id:r.id,code:r.code,type:r.type,drive:r.drive_id,src:dsrc(r.drive_id,1600),origId:r.orig_drive_id||undefined,crop:r.crop||undefined,orig:(r.orig_drive_id||r.crop)?true:undefined,status:r.status,by:r.uploaded_email,date:r.created_at.slice(0,10),note:r.note||'',order:r.sort_order});
 const merge=rows=>rows.map(r=>{const m=mapRow(r),i=photos.findIndex(x=>x.id==m.id);i<0?photos.push(m):photos[i]=m;return m});
 /* only ONE page of data is loaded at a time (works for 10,000+ items) */
 const C={key:null,v:0,pc:0,gal:{rows:[],total:null},rev:{rows:[],total:null},mine:{rows:[],total:null}};
@@ -362,8 +377,7 @@ async del(d){if(!confirm('Delete this file?'))return;const p=find(d.p);
 await fn({a:'delete',ids:[p.drive,p.origId].filter(Boolean)});
 const {error}=await sb.from('photos').delete().eq('id',p.id);if(error)throw error;
 photos.splice(photos.indexOf(p),1);idx=Math.max(0,idx-1);modal();render();toast('File deleted.')},
-async restore(d){const p=find(d.p),bad=p.drive;await upd(p.id,{drive_id:p.origId,orig_drive_id:null});fn({a:'delete',ids:[bad]}).catch(()=>{});
-p.drive=p.origId;p.src=dsrc(p.drive,1600);delete p.origId;delete p.orig;modal();render();toast('Original photo restored.')},
+async restore(d){const p=find(d.p);await upd(p.id,{crop:null});p.crop=null;delete p.orig;modal();render();toast('Original photo restored.')},
 async submit(){const code=$('#uc').value.trim().toUpperCase();
 if(!code)return toast('Enter the item code first.');if(!queue.length)return toast('Take or choose at least one file.');
 const L=queue.slice(),f=L.map(()=>0),ids=[];let done=0,next=0;
@@ -377,19 +391,12 @@ queue=[];await load();view=isAdmin()?'gallery':'mine';render();
 toast('Uploaded '+L.length+' file'+(L.length>1?'s':'')+'. '+(isAdmin()?'Published.':'Waiting for admin review.'))}finally{upl()}}
 };
 addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b||!H[b.dataset.act])return;
-e.stopImmediatePropagation();if(b.dataset.act!='open')dirty();const slow=/^(del|restore)$/.test(b.dataset.act);if(slow)upl('Working...','Updating Google Drive',.6);
+e.stopImmediatePropagation();if(!/^(open|crop)$/.test(b.dataset.act))dirty();const slow=/^(del|restore)$/.test(b.dataset.act);if(slow)upl('Working...','Updating Google Drive',.6);
 try{await H[b.dataset.act](b.dataset)}catch(x){toast(x.message||'Something went wrong.')}finally{if(slow)upl()}},true);
 
-async function saveCrop(){try{const p=find(crop.pid),img=$('#ci'),{W,H:Hh,nw,nh,x,y,w,h}=crop;
-let ow=Math.round(w/W*nw),oh=Math.round(h/Hh*nh);const m=Math.min(1,2400/Math.max(ow,oh));ow=Math.round(ow*m);oh=Math.round(oh*m);
-const c=document.createElement('canvas');c.width=ow;c.height=oh;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,ow,oh);
-g.drawImage(img,x/W*nw,y/Hh*nh,w/W*nw,h/Hh*nh,0,0,ow,oh);
-const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(!blob)throw 0;
-upl('Saving crop','Please keep this page open',.6);const id=await up(new File([blob],p.code+'-crop.jpg',{type:'image/jpeg'}));
-await upd(p.id,{drive_id:id,orig_drive_id:p.origId||p.drive});
-if(p.origId)fn({a:'delete',ids:[p.drive]}).catch(()=>{});else p.origId=p.drive;
-p.drive=id;p.src=dsrc(id,1600);p.orig=dsrc(p.origId,1600);upl();dirty();crop=null;modal();render();toast('Crop saved. Original kept in Google Drive.')}
-catch(err){upl();toast('Could not crop this file.')}}
+async function saveCrop(){try{const p=find(crop.pid),{W,H:Hh,x,y,w,h}=crop,f=v=>+v.toFixed(4);
+const c={x:f(x/W),y:f(y/Hh),w:f(w/W),h:f(h/Hh)};await upd(p.id,{crop:c});p.crop=c;p.orig=true;dirty();crop=null;modal();render();toast('Crop saved. Use "Set as main" to make it the main photo.')}
+catch(err){toast('Could not save the crop: '+((err&&err.message)||'try again'))}}
 
 
 /* ---------- NICER POPUPS + UPLOAD OVERLAY ---------- */
@@ -402,11 +409,11 @@ o.querySelector('b').textContent=t;o.querySelector('span').textContent=s||'';o.q
 
 /* ---------- FULLSCREEN VIEWER: double-tap / double-click the photo, then zoom ---------- */
 const Z={s:1,x:0,y:0,el:null,ps:new Map(),t:0,tx:0,ty:0,d0:1,s0:1},vt={t:0,x:0,y:0,sx:0,sy:0,on:0};
-const zimg=e=>{const i=e.target.closest&&e.target.closest('#lb img');if(i&&i!==Z.el){Z.el=i;Z.s=1;Z.x=0;Z.y=0;Z.ps.clear()}return i};
-function lbOpen(src){closeLb();const o=document.createElement('div');o.id='lb';o.setAttribute('role','dialog');o.setAttribute('aria-label','Photo viewer');
-o.innerHTML='<button class="lbx" aria-label="Close">&times;</button><img alt="" draggable="false"><div class="lbz"><button data-z="-1" aria-label="Zoom out">&minus;</button><button data-z="1" aria-label="Zoom in">+</button></div>';
-const im=o.querySelector('img');im.src=src;document.body.appendChild(o);
-const hi=new Image();hi.onload=()=>{im.src=hi.src};hi.src=src.replace(/sz=w\d+/,'sz=w2400')}
+const zimg=e=>{const i=e.target.closest&&e.target.closest('#lb img,#lb canvas');if(i&&i!==Z.el){Z.el=i;Z.s=1;Z.x=0;Z.y=0;Z.ps.clear()}return i};
+function lbOpen(src,cd){closeLb();const o=document.createElement('div');o.id='lb';o.setAttribute('role','dialog');o.setAttribute('aria-label','Photo viewer');
+o.innerHTML='<button class="lbx" aria-label="Close">&times;</button>'+(cd?'<canvas class="cv" data-s="'+src.replace(/sz=w\d+/,'sz=w2400')+'" data-c="'+cd+'"></canvas>':'<img alt="" draggable="false">')+'<div class="lbz"><button data-z="-1" aria-label="Zoom out">&minus;</button><button data-z="1" aria-label="Zoom in">+</button></div>';
+const im=o.querySelector('img');if(im)im.src=src;document.body.appendChild(o);
+if(im){const hi=new Image();hi.onload=()=>{im.src=hi.src};hi.src=src.replace(/sz=w\d+/,'sz=w2400')}}
 function closeLb(){const o=$('#lb');if(o)o.remove();Z.el=null;Z.s=1;Z.x=0;Z.y=0;Z.ps.clear()}
 function zapply(){const i=Z.el,v=i.closest('#lb'),mx=v.clientWidth*(Z.s-1)/2,my=v.clientHeight*(Z.s-1)/2;
 Z.x=Math.max(-mx,Math.min(mx,Z.x));Z.y=Math.max(-my,Math.min(my,Z.y));
@@ -414,7 +421,7 @@ i.style.transform=Z.s>1?`translate(${Z.x}px,${Z.y}px) scale(${Z.s})`:'';i.style.
 function zoomAt(cx,cy,ns){if(!Z.el)return;const r=Z.el.closest('#lb').getBoundingClientRect(),px=cx-(r.left+r.width/2),py=cy-(r.top+r.height/2),k=ns/Z.s;
 Z.x=px-(px-Z.x)*k;Z.y=py-(py-Z.y)*k;Z.s=ns;if(ns<=1){Z.x=0;Z.y=0}zapply()}
 document.addEventListener('pointerdown',e=>{
-const vi=e.target.closest&&e.target.closest('.view img');vt.on=vi?1:0;if(vi){vt.sx=e.clientX;vt.sy=e.clientY}
+const vi=e.target.closest&&e.target.closest('.view img,.view canvas');vt.on=vi?1:0;if(vi){vt.sx=e.clientX;vt.sy=e.clientY}
 const i=zimg(e);if(!i)return;Z.ps.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY});
 if(i.setPointerCapture)try{i.setPointerCapture(e.pointerId)}catch(x){}
 if(Z.ps.size==2){const [a,b]=[...Z.ps.values()];Z.d0=Math.hypot(a.x-b.x,a.y-b.y)||1;Z.s0=Z.s}});
@@ -423,14 +430,14 @@ const dx=e.clientX-st.x,dy=e.clientY-st.y;st.x=e.clientX;st.y=e.clientY;
 if(Z.ps.size==2){const [a,b]=[...Z.ps.values()];zoomAt((a.x+b.x)/2,(a.y+b.y)/2,Math.max(1,Math.min(5,Z.s0*Math.hypot(a.x-b.x,a.y-b.y)/Z.d0)))}
 else if(Z.s>1){Z.x+=dx;Z.y+=dy;zapply()}});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,e=>{
-if(t=='pointerup'&&vt.on){vt.on=0;const vi=e.target.closest&&e.target.closest('.view img');
-if(vi&&Math.hypot(e.clientX-vt.sx,e.clientY-vt.sy)<10){const n=Date.now();if(n-vt.t<320&&Math.hypot(e.clientX-vt.x,e.clientY-vt.y)<40){vt.t=0;lbOpen(vi.src)}else{vt.t=n;vt.x=e.clientX;vt.y=e.clientY}}return}
+if(t=='pointerup'&&vt.on){vt.on=0;const vi=e.target.closest&&e.target.closest('.view img,.view canvas');
+if(vi&&Math.hypot(e.clientX-vt.sx,e.clientY-vt.sy)<10){const n=Date.now();if(n-vt.t<320&&Math.hypot(e.clientX-vt.x,e.clientY-vt.y)<40){vt.t=0;lbOpen(vi.dataset.s||vi.src,vi.dataset.c)}else{vt.t=n;vt.x=e.clientX;vt.y=e.clientY}}return}
 const st=Z.ps.get(e.pointerId);if(!st)return;
 const tap=t=='pointerup'&&Z.ps.size==1&&Math.hypot(e.clientX-st.sx,e.clientY-st.sy)<10;Z.ps.delete(e.pointerId);if(!tap)return;
 const now=Date.now();if(now-Z.t<320&&Math.hypot(e.clientX-Z.tx,e.clientY-Z.ty)<40){Z.t=0;zoomAt(e.clientX,e.clientY,Z.s>1?1:2.5)}else{Z.t=now;Z.tx=e.clientX;Z.ty=e.clientY}}));
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#lb button');if(!t)return;
 if(t.classList.contains('lbx'))return closeLb();
-const im=$('#lb img');if(!Z.el||Z.el!==im){Z.el=im;Z.s=1;Z.x=0;Z.y=0}
+const im=$('#lb img,#lb canvas');if(!Z.el||Z.el!==im){Z.el=im;Z.s=1;Z.x=0;Z.y=0}
 zoomAt(innerWidth/2,innerHeight/2,Math.max(1,Math.min(5,Z.s*(t.dataset.z=='1'?1.6:1/1.6))))});
 addEventListener('wheel',e=>{if(!zimg(e))return;e.preventDefault();zoomAt(e.clientX,e.clientY,Math.max(1,Math.min(5,Z.s*(e.deltaY<0?1.2:1/1.2))))},{passive:false});
 addEventListener('keydown',e=>{if(e.key=='Escape'&&$('#lb')){e.stopImmediatePropagation();closeLb()}},true);
@@ -441,6 +448,20 @@ const thFade=t=>{t.classList.toggle('fl',t.scrollLeft>4);t.classList.toggle('fr'
 t.scrollLeft=sl;thFade(t);t.addEventListener('scroll',()=>thFade(t),{passive:true});
 const a=t.querySelector('.on');if(a){const r=a.getBoundingClientRect(),tr=t.getBoundingClientRect();
 t.scrollTo({left:t.scrollLeft+(r.left-tr.left)-(t.clientWidth-r.width)/2,behavior:'smooth'})}}}
+
+/* ---------- CROP IS DISPLAY-ONLY: saved as a rectangle, drawn on a canvas ---------- */
+{const _m=media;media=(p,full,sz)=>{if(!p.crop||p.type=='video')return _m(p,full,sz);const c=p.crop;
+return `<canvas class="cv" data-s="${dsrc(p.drive,sz||(full?1600:800))}" data-c="${c.x},${c.y},${c.w},${c.h}" role="img" aria-label="${esc(p.code)}"></canvas>`}}
+function hydrate(){document.querySelectorAll('canvas.cv:not([data-h])').forEach(cv=>{cv.dataset.h=1;const [x,y,w,h]=cv.dataset.c.split(',').map(Number),im=new Image();
+im.onload=()=>{const sw=w*im.naturalWidth,sh=h*im.naturalHeight,k=Math.min(1,2400/Math.max(sw,sh));cv.width=Math.max(1,Math.round(sw*k));cv.height=Math.max(1,Math.round(sh*k));
+cv.getContext('2d').drawImage(im,x*im.naturalWidth,y*im.naturalHeight,sw,sh,0,0,cv.width,cv.height);cv.classList.add('ld')};im.src=cv.dataset.s})}
+new MutationObserver(hydrate).observe(document.body,{childList:true,subtree:true});
+
+/* ---------- PASTE (Ctrl+V / Cmd+V) screenshots or copied images on the Upload page ---------- */
+addEventListener('paste',e=>{if(!me||view!='upload'||!$('#qq'))return;
+const fs=[...((e.clipboardData&&e.clipboardData.files)||[])].filter(f=>/^(image|video)\//.test(f.type));if(!fs.length)return;
+e.preventDefault();const n=queue.length;addFiles(fs);const added=queue.length-n;
+if(added>0)toast('Pasted '+added+' file'+(added>1?'s':'')+'. Added to your uploads.','ok')});
 render();
 </script>
 </body>
